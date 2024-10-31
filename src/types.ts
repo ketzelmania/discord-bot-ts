@@ -4,6 +4,7 @@ export type CommandContext = {
     args: string[];
     bot: Eris.Client;
     msg: Eris.Message<Eris.GuildTextableChannel>;
+    config: { string: any };
 
     reply(content: RepliableContent, channel?: string): Promise<Eris.Message>;
 };
