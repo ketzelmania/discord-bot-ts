@@ -6,6 +6,8 @@ export type CommandContext = {
     msg: Eris.Message<Eris.GuildTextableChannel>;
     config: { string: any };
 
+    adminLevel: number;
+
     reply(content: RepliableContent, channel?: string): Promise<Eris.Message>;
 };
 

@@ -105,8 +105,6 @@ bot.on("messageCreate", async (message: Eris.Message<GuildTextableChannel>) => {
     const desiredCommand = args.shift();
     const command = commands[desiredCommand];
 
-    console.log(getAdminLevel(config, message.member));
-
     if (!command) return;
 
     // TODO: add file as an arg to replycontent and remove from message data
@@ -116,6 +114,7 @@ bot.on("messageCreate", async (message: Eris.Message<GuildTextableChannel>) => {
         bot: bot,
         msg: message,
         config: config,
+        adminLevel: getAdminLevel(config, message.member),
 
         reply: function (
             content: RepliableContent,
