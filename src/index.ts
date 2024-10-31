@@ -21,36 +21,39 @@ function messageHasPrefix(message: Eris.Message): boolean {
     return message.content.startsWith(process.env.PREFIX);
 }
 
-function loadCommandsInDirectory(directory: string) {
+async function loadCommandsInDirectory(
+    directory: string
+): Promise<{ [key: string]: CommandData }> {
     const commands = FsSync.readdirSync(directory);
     let loadedCommands = {};
 
     for (let i = 0; i < commands.length; i++) {
-        import(path.join(directory, commands[i])).then(
-            (command) => (loadedCommands[command.name] = command)
-        );
+        let thisCommand = await import(path.join(directory, commands[i]));
+        loadedCommands[thisCommand.default.name] = thisCommand.default;
     }
 
     return loadedCommands;
 }
 
-function loadAllCommands(): { [key: string]: CommandData } {
+async function loadAllCommands(): Promise<{ [key: string]: CommandData }> {
     const categories = FsSync.readdirSync(path.join(__dirname, "cmds"));
-    let loadedCategories = {};
+    let loadedCommands = {};
 
     for (const category of categories) {
-        loadedCategories[category] = loadCommandsInDirectory(
+        let theseCommands = await loadCommandsInDirectory(
             path.join(__dirname, "cmds", category)
         );
+
+        loadedCommands = Object.assign({}, loadedCommands, theseCommands);
     }
 
-    return loadedCategories;
+    return loadedCommands;
 }
 
-bot.on("ready", () => {
+bot.on("ready", async () => {
     console.log("Connected");
 
-    commands = loadAllCommands();
+    commands = await loadAllCommands();
 });
 
 bot.on("messageCreate", async (message: Eris.Message) => {
@@ -63,13 +66,7 @@ bot.on("messageCreate", async (message: Eris.Message) => {
     const desiredCommand = args.shift();
     const command = commands[desiredCommand];
 
-    console.log(desiredCommand);
-    console.log(commands);
-    console.log(command);
-
     if (!command) return;
-
-    console.log(command);
 
     const botWasMentioned = message.mentions.find(
         (mentionedUser) => mentionedUser.id === bot.user.id
