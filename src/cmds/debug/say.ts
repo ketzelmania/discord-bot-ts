@@ -4,7 +4,6 @@ export default {
     name: "say",
     description: "Says a message",
     usage: "<message...>",
-    level: 5,
 
     async exec(ctx: CommandContext) {
         ctx.msg.delete();

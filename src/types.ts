@@ -8,6 +8,14 @@ export type CommandContext = {
     reply(content: RepliableContent, channel?: string): Promise<Eris.Message>;
 };
 
+export type CommandData = {
+    name: string;
+    description: string;
+    usage: string;
+
+    exec(ctx: CommandContext): Promise<Eris.Message>;
+};
+
 export type RepliableContent =
     | Eris.MessageContent
     | object
