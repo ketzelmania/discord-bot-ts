@@ -1,8 +1,8 @@
-import Eris from "eris";
+import Eris, { Guild, GuildTextableChannel } from "eris";
 import FsSync from "fs";
 import "dotenv/config";
 import path, { dirname } from "path";
-import { CommandData } from "./types";
+import { CommandContext, CommandData, RepliableContent } from "./types";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,13 +50,94 @@ async function loadAllCommands(): Promise<{ [key: string]: CommandData }> {
     return loadedCommands;
 }
 
+function isObjectOrArray(x: any) {
+    return typeof x === "object" && x !== null;
+}
+
+function convertContentToObject(content: Eris.AdvancedMessageContent) {
+    return { content: content.toString() };
+}
+
+function doesNonStringContentHaveData(content: Eris.AdvancedMessageContent) {
+    return content.content || content.embeds || content.file;
+}
+
+function formatJsonForDiscord(jsonData: object) {
+    return {
+        content: `\`\`\`json\n${JSON.stringify(jsonData, null, 4)}\`\`\``,
+    };
+}
+
+function correctContent(content: RepliableContent) {
+    let correctedContent = content as Eris.AdvancedMessageContent;
+
+    if (!isObjectOrArray(correctedContent)) {
+        correctedContent = convertContentToObject(correctedContent);
+    } else {
+        if (!doesNonStringContentHaveData(correctedContent)) {
+            correctedContent = formatJsonForDiscord(correctedContent);
+        }
+    }
+
+    return correctedContent;
+}
+
+function getProperChannel_shouldReferenceMessage(
+    message: Eris.Message<GuildTextableChannel>,
+    channel?: string
+): [Eris.GuildTextableChannel, boolean] {
+    if (channel)
+        return [
+            message.channel.guild.channels.find(
+                (c) => c.id === channel
+            ) as Eris.GuildTextableChannel,
+
+            false,
+        ];
+
+    return [message.channel, true];
+}
+
+function mutateReplyContentForProperChannelData(
+    message: Eris.Message,
+    replyContent: Eris.AdvancedMessageContent,
+    shouldReferenceMessage: boolean
+): Eris.AdvancedMessageContent {
+    if (shouldReferenceMessage) {
+        replyContent = Object.assign(
+            {},
+            {
+                messageReference: {
+                    messageID: message.id,
+                },
+                allowedMentions: {
+                    repliedUser: false,
+                },
+            },
+            replyContent
+        );
+    } else {
+        replyContent = Object.assign(
+            {},
+            {
+                allowedMentions: {
+                    repliedUser: false,
+                },
+            },
+            replyContent
+        );
+    }
+
+    return replyContent;
+}
+
 bot.on("ready", async () => {
     console.log("Connected");
 
     commands = await loadAllCommands();
 });
 
-bot.on("messageCreate", async (message: Eris.Message) => {
+bot.on("messageCreate", async (message: Eris.Message<GuildTextableChannel>) => {
     if (!messageHasPrefix(message)) return;
 
     const args = message.content
@@ -67,6 +148,33 @@ bot.on("messageCreate", async (message: Eris.Message) => {
     const command = commands[desiredCommand];
 
     if (!command) return;
+
+    // TODO: add file as an arg to replycontent and remove from message data
+
+    const ctx: CommandContext = {
+        args: args,
+        bot: bot,
+        msg: message,
+
+        reply: function (
+            content: RepliableContent,
+            channel?: string
+        ): Promise<Eris.Message> {
+            let replyContent = correctContent(message.content);
+            let [replyChannel, shouldReferenceMessage] =
+                getProperChannel_shouldReferenceMessage(message, channel);
+
+            replyContent = mutateReplyContentForProperChannelData(
+                message,
+                replyContent,
+                shouldReferenceMessage
+            );
+
+            return replyChannel.createMessage(replyContent);
+        },
+    };
+
+    command.exec(ctx);
 
     const botWasMentioned = message.mentions.find(
         (mentionedUser) => mentionedUser.id === bot.user.id

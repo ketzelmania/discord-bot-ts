@@ -19,6 +19,6 @@ export type CommandData = {
 export type RepliableContent =
     | Eris.MessageContent
     | object
-    | [any]
+    | any[]
     | number
     | boolean;
