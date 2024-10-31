@@ -9,7 +9,6 @@
 
 import Eris, { GuildTextableChannel } from "eris";
 import FsSync from "fs";
-import "dotenv/config";
 import path, { dirname } from "path";
 import { CommandContext, CommandData, RepliableContent } from "./types";
 import { fileURLToPath } from "url";
@@ -18,7 +17,9 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const bot = new (Eris as any)(process.env.TOKEN, {
+const config = JSON.parse(FsSync.readFileSync("./config.json", "utf-8"));
+
+const bot = new (Eris as any)(config.token, {
     getAllUsers: true,
     intents: ["all"],
 });
@@ -78,7 +79,7 @@ async function loadAllCommands(): Promise<{ [key: string]: CommandData }> {
  * @returns {boolean} Whether the message is prefixed with the prefix
  */
 function messageHasPrefix(message: Eris.Message): boolean {
-    return message.content.startsWith(process.env.PREFIX);
+    return message.content.startsWith(config.prefix);
 }
 
 /**
@@ -162,9 +163,8 @@ function getProperChannel_shouldReferenceMessage(
     if (channel)
         return [
             message.channel.guild.channels.find(
-                (c) => c.id === channel
-            ) as Eris.GuildTextableChannel,
-
+                (c: Eris.GuildTextableChannel) => c.id === channel
+            ),
             false,
         ];
 
@@ -222,9 +222,7 @@ bot.on("ready", async () => {
 bot.on("messageCreate", async (message: Eris.Message<GuildTextableChannel>) => {
     if (!messageHasPrefix(message)) return;
 
-    const args = message.content
-        .substring(process.env.PREFIX.length)
-        .split(" ");
+    const args = message.content.substring(config.prefix.length).split(" ");
 
     const desiredCommand = args.shift();
     const command = commands[desiredCommand];
@@ -237,6 +235,7 @@ bot.on("messageCreate", async (message: Eris.Message<GuildTextableChannel>) => {
         args: args,
         bot: bot,
         msg: message,
+        config: config,
 
         reply: function (
             content: RepliableContent,

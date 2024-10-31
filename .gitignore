@@ -1,4 +1,5 @@
 node_modules
 .prettierrc.json
 *.env
+config.json
 eslint.config.js
