@@ -10,10 +10,26 @@ import Eris from "eris";
 export function getAdminLevel(config: any, member: Eris.Member): number {
     let level = 0;
 
-    for (const role of config.levels) {
-        const roleLevel = config.levels[role];
+    const adminIds = Object.keys(config.adminIds).map(
+        (key) => config.adminIds[key]
+    );
 
-        if (member.roles.includes(role) && level < roleLevel) level = roleLevel;
+    const levels = Object.keys(config.levels).map((key) => [
+        key,
+        config.levels[key],
+    ]);
+
+    // for (const userId of adminIds) {
+    //     console.log(userId, member.id);
+    //     if (userId == member.id) return 5;
+    // }
+
+    for (const roleData of levels) {
+        const roleId = roleData[0];
+        const roleLevel = roleData[1];
+
+        if (member.roles.includes(roleId) && level < roleLevel)
+            level = roleLevel;
     }
 
     return level;
