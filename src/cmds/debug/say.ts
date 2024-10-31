@@ -1,4 +1,4 @@
-import { CommandContext } from "../types";
+import { CommandContext } from "../../types";
 
 export default {
     name: "say",
