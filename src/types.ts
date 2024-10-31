@@ -1,10 +1,9 @@
 import type Eris from "eris";
-import type { GuildTextableChannel } from "eris";
 
 export type CommandContext = {
     args: string[];
     bot: Eris.Client;
-    msg: Eris.Message<GuildTextableChannel>;
+    msg: Eris.Message<Eris.GuildTextableChannel>;
 
     reply(content: RepliableContent, channel?: string): Promise<Eris.Message>;
 };

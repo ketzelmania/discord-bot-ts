@@ -1,20 +1,40 @@
-import eris from "eris";
+import Eris from "eris";
 import "dotenv/config";
 
-const bot = new (eris as any)(process.env.TOKEN);
+const bot = new (Eris as any)(process.env.TOKEN, {
+    getAllUsers: true,
+    intents: ["all"],
+});
+
+function hasPrefix(message: Eris.Message): boolean {
+    return message.content.startsWith(process.env.PREFIX);
+}
 
 bot.on("ready", () => {
     console.log("Connected");
 });
 
-bot.on("messageCreate", async (msg) => {
-    const botWasMentioned = msg.mentions.find(
+bot.on("messageCreate", async (message: Eris.Message) => {
+    if (!hasPrefix(message)) {
+        return;
+    }
+
+    const args = message.content
+        .substring(process.env.PREFIX.length)
+        .split(" ");
+
+    const desiredCommand = args.shift();
+
+    // TODO: FsSync to collect names of commands
+    // then run the command lol
+
+    const botWasMentioned = message.mentions.find(
         (mentionedUser) => mentionedUser.id === bot.user.id
     );
 
     if (botWasMentioned) {
         try {
-            await msg.channel.createMessage("Present");
+            await message.channel.createMessage("Present");
         } catch (err) {
             // There are various reasons why sending a message may fail.
             // The API might time out or choke and return a 5xx status,
@@ -26,7 +46,7 @@ bot.on("messageCreate", async (msg) => {
     }
 });
 
-bot.on("error", (err) => {
+bot.on("error", (err: string) => {
     console.warn(err);
 });
 
